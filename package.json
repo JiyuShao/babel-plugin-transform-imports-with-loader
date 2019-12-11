@@ -1,0 +1,46 @@
+{
+  "name": "babel-plugin-transform-imports-with-loader",
+  "version": "1.0.0",
+  "description": "Babel transform plugin for replacing file imports with js string",
+  "main": "index.js",
+  "scripts": {
+    "lint": "npm run lint:es && npm run lint:prettier",
+    "lint:es": "eslint --ext .ts ./ --cache --quiet",
+    "lint:prettier": "prettier --list-different \"**/*.{ts,json,yml,yaml,md}\"",
+    "fix": "npm run fix:es && npm run fix:prettier",
+    "fix:es": "eslint --ext .ts ./ --cache --quiet --fix",
+    "fix:prettier": "prettier --write \"**/*.{ts,json,yml,yaml,md}\"",
+    "test": "jest",
+    "coverage": "jest --coverage",
+    "coveralls": "jest --coverage --coverageReporters=text-lcov | coveralls",
+    "watch": "jest --watch"
+  },
+  "keywords": [
+    "babel",
+    "transform",
+    "import",
+    "js"
+  ],
+  "author": "Jiyu Shao",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.7.4",
+    "@types/jest": "^24.0.23",
+    "@types/node": "^12.12.14",
+    "@typescript-eslint/eslint-plugin": "^2.10.0",
+    "@typescript-eslint/parser": "^2.10.0",
+    "eslint": "^6.7.2",
+    "eslint-config-prettier": "^6.7.0",
+    "eslint-plugin-prettier": "^3.1.1",
+    "husky": "^3.1.0",
+    "jest": "^24.9.0",
+    "lint-staged": "^9.5.0",
+    "prettier": "^1.19.1",
+    "ts-jest": "^24.2.0",
+    "typescript": "^3.7.3"
+  },
+  "dependencies": {
+    "@babel/template": "^7.7.4",
+    "dedent": "^0.7.0"
+  }
+}
