@@ -1,9 +1,14 @@
 {
   "name": "babel-plugin-transform-imports-with-loader",
-  "version": "1.0.0",
+  "version": "0.0.1-alpha.0",
   "description": "Babel transform plugin for replacing file imports with js string",
-  "main": "index.js",
+  "main": "lib/index.js",
+  "files": [
+    "lib/",
+    "README.md"
+  ],
   "scripts": {
+    "prepublishOnly": "npm run lint && rm -rf lib && tsc",
     "lint": "npm run lint:es && npm run lint:prettier",
     "lint:es": "eslint --ext .ts ./ --cache --quiet",
     "lint:prettier": "prettier --list-different \"**/*.{ts,json,yml,yaml,md}\"",
@@ -19,7 +24,7 @@
     "babel",
     "transform",
     "import",
-    "js"
+    "loader"
   ],
   "author": "Jiyu Shao",
   "license": "MIT",
