@@ -25,8 +25,11 @@ export interface LoaderOptions {
   // test file path to use current plugin
   test: RegExp | RegExp[];
 
-  // custom transform function
-  transformFunc?: string;
+  // transform file content to serialized string
+  transform?: (fileContent: string) => string;
+
+  // custom unserialize function
+  unserializeFunc?: string;
 }
 
 /**
@@ -47,7 +50,8 @@ const validateOptions = (options: Options, path: Record<string, any>) => {
   }
 
   // format rulesArray
-  const parsedRulesArray = rulesArray.map(({ test, transformFunc }) => {
+  const parsedRulesArray = rulesArray.map(currentLoader => {
+    const { test, transform, unserializeFunc } = currentLoader;
     // get testArray from test
     let testArray: RegExp[];
     if (!Array.isArray(test)) {
@@ -63,19 +67,26 @@ const validateOptions = (options: Options, path: Record<string, any>) => {
       );
     }
 
-    // validate option transform
+    // validate transform function
+    if (transform && !(transform instanceof Function)) {
+      throw path.buildCodeFrameError(
+        '[options.rules] transform is not function'
+      );
+    }
+
+    // validate option unserialize
     try {
-      transformFunc && eval(transformFunc)();
+      unserializeFunc && eval(unserializeFunc)();
     } catch (e) {
       throw path.buildCodeFrameError(
-        '[options.rules] is not function string',
-        e.message
+        '[options.rules] unserializeFunc is not function string'
       );
     }
 
     return {
       test: testArray,
-      transformFunc: transformFunc || 'String',
+      transform: transform || String,
+      unserializeFunc: unserializeFunc || 'String',
     };
   });
 
@@ -83,45 +94,38 @@ const validateOptions = (options: Options, path: Record<string, any>) => {
 };
 
 /**
- * get transformFuncUUID by transformFunc
+ * get unserializeFuncUUID by unserializeFunc
  */
-const getTransformFuncUUID = (matchedLoader, transformFuncUUIDCache) => {
-  const matchedLoaderCache = transformFuncUUIDCache.find(
-    e => e.transformFunc === matchedLoader.transformFunc
+const getunserializeFuncUUID = (matchedLoader, unserializeFuncUUIDCache) => {
+  const matchedLoaderCache = unserializeFuncUUIDCache.find(
+    e => e.unserializeFunc === matchedLoader.unserializeFunc
   );
   if (matchedLoaderCache) {
-    return matchedLoaderCache.transformFuncUUID;
+    return matchedLoaderCache.unserializeFuncUUID;
   }
 
   const uuid =
     Math.random()
       .toString(36)
       .substring(2) + Date.now().toString(36);
-  matchedLoader.transformFuncUUID = `__BABEL_TRANSFORM_IMPORTS__${uuid}`;
-  transformFuncUUIDCache.push({
-    transformFunc: matchedLoader.transformFunc,
-    transformFuncUUID: matchedLoader.transformFuncUUID,
+  matchedLoader.unserializeFuncUUID = `__BABEL_TRANSFORM_IMPORTS__${uuid}`;
+  unserializeFuncUUIDCache.push({
+    unserializeFunc: matchedLoader.unserializeFunc,
+    unserializeFuncUUID: matchedLoader.unserializeFuncUUID,
   });
-  return matchedLoader.transformFuncUUID;
+  return matchedLoader.unserializeFuncUUID;
 };
 
 /**
- * generate current import final ast
- * @param {string} variableName variable name
- * @param {string} filePath file path
- * @param {string} transformFuncUUID transform func unique id
+ * import declaration function extra options
  */
-const generateImportAst = (variableName, filePath, transformFuncUUID) => {
-  const fileContent = fs.readFileSync(filePath, {
-    encoding: 'utf8',
-  });
+interface ImportDeclarationOptions {
+  // plugin babel variable
+  babel: Record<string, any>;
 
-  const codeString = dedent`
-  const ${variableName} = ${transformFuncUUID}(\`${fileContent.trim()}\`)
-  `;
-
-  return template.ast(codeString);
-};
+  // unserialize function uuid maping cache
+  unserializeFuncUUIDCache: UnserializeFuncUUIDCacheItem[];
+}
 
 /**
  * handle babel import declaration transform
@@ -132,7 +136,7 @@ const generateImportAst = (variableName, filePath, transformFuncUUID) => {
 const ImportDeclaration = (
   path,
   state,
-  { babel: { types: t }, transformFuncUUIDCache }
+  { babel: { types: t }, unserializeFuncUUIDCache }: ImportDeclarationOptions
 ) => {
   // get validate options
   const validOptions = validateOptions(state.opts, path);
@@ -159,46 +163,73 @@ const ImportDeclaration = (
 
   // transform import
   const variableName = importDefaultSpecifierNode.local.name;
-  const ast = generateImportAst(
-    variableName,
-    filePath,
-    getTransformFuncUUID(matchedLoader, transformFuncUUIDCache)
+  let fileContent = fs.readFileSync(filePath, {
+    encoding: 'utf8',
+  });
+  fileContent = matchedLoader.transform(fileContent.trim());
+
+  const unserializeFuncUUID = getunserializeFuncUUID(
+    matchedLoader,
+    unserializeFuncUUIDCache
   );
+  const codeString = dedent`
+  const ${variableName} = ${unserializeFuncUUID}(\`${fileContent}\`)
+  `;
+
+  const ast = template.ast(codeString);
   path.replaceWithMultiple(ast);
 };
 
 /**
- * run on program exit, inject used transform functions
+ * program exit function extra options
+ */
+interface ProgramExitOptions {
+  unserializeFuncUUIDCache: UnserializeFuncUUIDCacheItem[];
+}
+
+/**
+ * run on program exit, inject used unserialize functions
  * @param path
  */
-const ProgramExit = (path, { transformFuncUUIDCache }) => {
-  const astArray = transformFuncUUIDCache.map(currentItem => {
+const ProgramExit = (
+  path,
+  { unserializeFuncUUIDCache }: ProgramExitOptions
+) => {
+  const astArray = unserializeFuncUUIDCache.map(currentItem => {
     return template.ast(
-      `const ${currentItem.transformFuncUUID} = ${currentItem.transformFunc}`
+      `const ${currentItem.unserializeFuncUUID} = ${currentItem.unserializeFunc}`
     );
   });
 
   path.unshiftContainer('body', astArray);
 };
 
+/**
+ * unserialize function & uuid mapping item
+ */
+interface UnserializeFuncUUIDCacheItem {
+  unserializeFunc: string;
+  unserializeFuncUUID: string;
+}
+
 export default babel => {
   // used to store
-  const transformFuncUUIDCache = [];
+  const unserializeFuncUUIDCache: UnserializeFuncUUIDCacheItem[] = [];
   return {
     name: 'babel-plugin-transform-imports-with-loader',
     visitor: {
       Program: {
-        exit: (path, _) => {
-          ProgramExit(path, { transformFuncUUIDCache });
+        exit: path => {
+          ProgramExit(path, { unserializeFuncUUIDCache });
         },
       },
       ImportDeclaration: (path, state) => {
-        ImportDeclaration(path, state, { babel, transformFuncUUIDCache });
+        ImportDeclaration(path, state, { babel, unserializeFuncUUIDCache });
       },
     },
     post() {
-      // print out transformFuncUUIDCache
-      // console.log('transformFuncUUIDCache', transformFuncUUIDCache);
+      // print out unserializeFuncUUIDCache
+      // console.log('unserializeFuncUUIDCache', unserializeFuncUUIDCache);
     },
   };
 };

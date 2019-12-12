@@ -13,7 +13,7 @@ describe('babel-plugin-transform-imports-with-loader', () => {
             {
               rules: {
                 test: /\.txt/,
-                // transformFunc: 'String', // default is string
+                // unserializeFunc: 'String', // default is string
               },
             },
           ],
@@ -57,11 +57,11 @@ describe('babel-plugin-transform-imports-with-loader', () => {
               rules: [
                 {
                   test: /\.txt/,
-                  transformFunc: 'String',
+                  unserializeFunc: 'String',
                 },
                 {
                   test: /\.txt2/,
-                  transformFunc: 'String',
+                  unserializeFunc: 'String',
                 },
               ],
             },
@@ -86,7 +86,7 @@ describe('babel-plugin-transform-imports-with-loader', () => {
               rules: [
                 {
                   test: [/\.txt/, /\.txt2/],
-                  transformFunc: 'String',
+                  unserializeFunc: 'String',
                 },
               ],
             },
@@ -100,7 +100,7 @@ describe('babel-plugin-transform-imports-with-loader', () => {
     expect(result.includes('this is test string2')).toBe(true);
   });
 
-  it('`plugin` should throw error when is not default import only', () => {
+  it('`plugin` should throw error when is no default import', () => {
     const testTransformedCode = () => {
       transformFileSync(
         path.resolve(__dirname, './fixtures/no-import-default/index.js'),
@@ -111,7 +111,7 @@ describe('babel-plugin-transform-imports-with-loader', () => {
               {
                 rules: {
                   test: /\.txt/,
-                  transformFunc: 'String',
+                  unserializeFunc: 'String',
                 },
               },
             ],
@@ -134,7 +134,7 @@ describe('babel-plugin-transform-imports-with-loader', () => {
               {
                 rules: {
                   test: /\.txt/,
-                  transformFunc: 'String',
+                  unserializeFunc: 'String',
                 },
               },
             ],
@@ -145,49 +145,72 @@ describe('babel-plugin-transform-imports-with-loader', () => {
 
     expect(testTransformedCode).toThrow();
   });
-});
 
-it('`plugin` should throw error when `rules.test` is not RegExp', () => {
-  const testTransformedCode = () => {
-    transformFileSync(
-      path.resolve(__dirname, './fixtures/import-as-string/index.js'),
-      {
-        plugins: [
-          [
-            plugin,
-            {
-              rules: {
-                test: 'this is not valid RegExp',
+  it('`plugin` should throw error when `rules.test` is not RegExp', () => {
+    const testTransformedCode = () => {
+      transformFileSync(
+        path.resolve(__dirname, './fixtures/import-as-string/index.js'),
+        {
+          plugins: [
+            [
+              plugin,
+              {
+                rules: {
+                  test: 'this is not valid RegExp',
+                },
               },
-            },
+            ],
           ],
-        ],
-      }
-    );
-  };
+        }
+      );
+    };
 
-  expect(testTransformedCode).toThrow();
-});
+    expect(testTransformedCode).toThrow();
+  });
 
-it('`plugin` should throw error when `rules.transformFunc` is not valid function string', () => {
-  const testTransformedCode = () => {
-    transformFileSync(
-      path.resolve(__dirname, './fixtures/import-as-string/index.js'),
-      {
-        plugins: [
-          [
-            plugin,
-            {
-              rules: {
-                test: /\.txt/,
-                transformFunc: 'this is not function string',
+  it('`plugin` should throw error when `rules.transform` is not Function', () => {
+    const testTransformedCode = () => {
+      transformFileSync(
+        path.resolve(__dirname, './fixtures/import-as-string/index.js'),
+        {
+          plugins: [
+            [
+              plugin,
+              {
+                rules: {
+                  test: /\.txt/,
+                  transform: 'this is not a function',
+                },
               },
-            },
+            ],
           ],
-        ],
-      }
-    );
-  };
+        }
+      );
+    };
 
-  expect(testTransformedCode).toThrow();
+    expect(testTransformedCode).toThrow();
+  });
+
+  it('`plugin` should throw error when `rules.unserializeFunc` is not valid function string', () => {
+    const testTransformedCode = () => {
+      transformFileSync(
+        path.resolve(__dirname, './fixtures/import-as-string/index.js'),
+        {
+          plugins: [
+            [
+              plugin,
+              {
+                rules: {
+                  test: /\.txt/,
+                  unserializeFunc: 'this is not function string',
+                },
+              },
+            ],
+          ],
+        }
+      );
+    };
+
+    expect(testTransformedCode).toThrow();
+  });
 });
