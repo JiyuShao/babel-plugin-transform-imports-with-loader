@@ -3,7 +3,7 @@
  * @Author: Jiyu Shao
  * @Date: 2019-12-06 16:52:20
  * @Last Modified by: Jiyu Shao
- * @Last Modified time: 2019-12-12 16:31:04
+ * @Last Modified time: 2019-12-12 17:19:24
  */
 import fs from 'fs';
 import { resolve, dirname } from 'path';
@@ -26,7 +26,7 @@ export interface LoaderOptions {
   test: RegExp | RegExp[];
 
   // transform file content to serialized string
-  transform?: (fileContent: string) => string;
+  transform?: (fileContent: string, filePath: string) => string;
 
   // custom unserialize function
   unserializeFunc?: string;
@@ -168,7 +168,8 @@ const ImportDeclaration = (
   let fileContent = fs.readFileSync(filePath, {
     encoding: 'utf8',
   });
-  fileContent = matchedLoader.transform(fileContent.trim());
+  // pass fileContent and filePath to transform func to allow transform to custom serializer
+  fileContent = matchedLoader.transform(fileContent.trim(), filePath);
 
   const unserializeFuncUUID = getunserializeFuncUUID(
     matchedLoader,
