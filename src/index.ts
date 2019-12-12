@@ -3,7 +3,7 @@
  * @Author: Jiyu Shao
  * @Date: 2019-12-06 16:52:20
  * @Last Modified by: Jiyu Shao
- * @Last Modified time: 2019-12-12 17:19:24
+ * @Last Modified time: 2019-12-12 19:02:14
  */
 import fs from 'fs';
 import { resolve, dirname } from 'path';
@@ -102,6 +102,12 @@ const getunserializeFuncUUID = (matchedLoader, unserializeFuncUUIDCache) => {
   );
   if (matchedLoaderCache) {
     return matchedLoaderCache.unserializeFuncUUID;
+  }
+
+  // eval Indirect call will use global scope
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval
+  if (matchedLoader.unserializeFunc === 'eval') {
+    return 'eval';
   }
 
   const uuid =

@@ -261,4 +261,26 @@ describe('babel-plugin-transform-imports-with-loader', () => {
 
     expect(testTransformedCode).toThrow();
   });
+
+  it('`plugin` should not cache unserializeFunc eval function', () => {
+    const transformedCode = transformFileSync(
+      path.resolve(__dirname, './fixtures/import-as-function/index.js'),
+      {
+        plugins: [
+          [
+            plugin,
+            {
+              rules: {
+                test: /\.js/,
+                unserializeFunc: 'eval', // default is string
+              },
+            },
+          ],
+        ],
+      }
+    );
+    const result = transformedCode ? transformedCode.code || '' : '';
+
+    expect(result.includes('__BABEL_TRANSFORM_IMPORTS__')).toBe(false);
+  });
 });
