@@ -100,6 +100,30 @@ describe('babel-plugin-transform-imports-with-loader', () => {
     expect(result.includes('this is test string2')).toBe(true);
   });
 
+  it('`plugin` should not throw error when import is not matched', () => {
+    const testTransformedCode = jest.fn(() => {
+      transformFileSync(
+        path.resolve(__dirname, './fixtures/no-import-default/index.js'),
+        {
+          plugins: [
+            [
+              plugin,
+              {
+                rules: {
+                  test: /\.txt2/,
+                  unserializeFunc: 'String',
+                },
+              },
+            ],
+          ],
+        }
+      );
+    });
+
+    testTransformedCode();
+    expect(testTransformedCode).toHaveReturned();
+  });
+
   it('`plugin` should throw error when is no default import', () => {
     const testTransformedCode = () => {
       transformFileSync(

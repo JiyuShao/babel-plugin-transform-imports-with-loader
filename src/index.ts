@@ -3,7 +3,7 @@
  * @Author: Jiyu Shao
  * @Date: 2019-12-06 16:52:20
  * @Last Modified by: Jiyu Shao
- * @Last Modified time: 2019-12-11 18:04:51
+ * @Last Modified time: 2019-12-12 15:51:58
  */
 import fs from 'fs';
 import { resolve, dirname } from 'path';
@@ -141,6 +141,13 @@ const ImportDeclaration = (
   // get validate options
   const validOptions = validateOptions(state.opts, path);
 
+  // get matched loader
+  const filePath = resolve(dirname(state.filename), path.node.source.value);
+  const matchedLoader = validOptions.rules.find(currentLoader => {
+    return currentLoader.test.some(e => e.test(filePath));
+  });
+  if (!matchedLoader) return;
+
   // get import default specifier node
   const importDefaultSpecifierNode = path.node.specifiers.find(
     t.isImportDefaultSpecifier
@@ -152,14 +159,6 @@ const ImportDeclaration = (
   } else if (path.node.specifiers.some(e => !t.isImportDefaultSpecifier(e))) {
     throw path.buildCodeFrameError('only support ImportDefaultSpecifier');
   }
-
-  // get matched loader
-  const filePath = resolve(dirname(state.filename), path.node.source.value);
-  const matchedLoader = validOptions.rules.find(currentLoader => {
-    return currentLoader.test.some(e => e.test(filePath));
-  });
-
-  if (!matchedLoader) return;
 
   // transform import
   const variableName = importDefaultSpecifierNode.local.name;
