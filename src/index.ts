@@ -3,7 +3,7 @@
  * @Author: Jiyu Shao
  * @Date: 2019-12-06 16:52:20
  * @Last Modified by: Jiyu Shao
- * @Last Modified time: 2019-12-12 15:51:58
+ * @Last Modified time: 2019-12-12 16:31:04
  */
 import fs from 'fs';
 import { resolve, dirname } from 'path';
@@ -142,6 +142,9 @@ const ImportDeclaration = (
   const validOptions = validateOptions(state.opts, path);
 
   // get matched loader
+  if (!state.filename) {
+    throw path.buildCodeFrameError('cannot find entry file path');
+  }
   const filePath = resolve(dirname(state.filename), path.node.source.value);
   const matchedLoader = validOptions.rules.find(currentLoader => {
     return currentLoader.test.some(e => e.test(filePath));

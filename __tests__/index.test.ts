@@ -1,8 +1,32 @@
+import fs from 'fs';
 import path from 'path';
-import { transformFileSync } from '@babel/core';
+import { transform, transformFileSync } from '@babel/core';
 import plugin from '../src/index';
 
 describe('babel-plugin-transform-imports-with-loader', () => {
+  it('`plugin` should throw error when using transform(cannot find entry file path)', () => {
+    const code = fs.readFileSync(
+      path.resolve(__dirname, './fixtures/import-as-string/index.js'),
+      'utf-8'
+    );
+    const transformedCode = () =>
+      transform(code, {
+        plugins: [
+          [
+            plugin,
+            {
+              rules: {
+                test: /\.txt/,
+                // unserializeFunc: 'String', // default is string
+              },
+            },
+          ],
+        ],
+      });
+
+    expect(transformedCode).toThrow();
+  });
+
   it('`plugin` should work with import as text variable', () => {
     const transformedCode = transformFileSync(
       path.resolve(__dirname, './fixtures/import-as-string/index.js'),
