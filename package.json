@@ -1,6 +1,6 @@
 {
   "name": "babel-plugin-transform-imports-with-loader",
-  "version": "0.0.1-alpha.4",
+  "version": "1.0.0-rc.0",
   "description": "Babel transform plugin for replacing file imports with js string",
   "main": "lib/index.js",
   "files": [
