@@ -14,7 +14,7 @@ npm install --save-dev babel-plugin-transform-imports-with-loader
 
 Via `.babelrc`:
 
-```json
+```jsonc
 {
   "plugins": [
     [
