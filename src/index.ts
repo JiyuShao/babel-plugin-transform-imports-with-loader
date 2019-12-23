@@ -3,7 +3,7 @@
  * @Author: Jiyu Shao
  * @Date: 2019-12-06 16:52:20
  * @Last Modified by: Jiyu Shao
- * @Last Modified time: 2019-12-12 19:02:14
+ * @Last Modified time: 2019-12-20 10:49:18
  */
 import fs from 'fs';
 import { resolve, dirname } from 'path';
@@ -19,11 +19,16 @@ export interface Options {
 }
 
 /**
+ * loader options test param
+ */
+export type TestOption = RegExp | string;
+
+/**
  * loader options
  */
 export interface LoaderOptions {
   // test file path to use current plugin
-  test: RegExp | RegExp[];
+  test: TestOption[];
 
   // transform file content to serialized string
   transform?: (fileContent: string, filePath: string) => string;
@@ -31,6 +36,19 @@ export interface LoaderOptions {
   // custom unserialize function
   unserializeFunc?: string;
 }
+
+/**
+ * get valid RegExp from RegExp or string
+ * @param {TestOption} regExp
+ * @param path
+ * @returns {RegExp}
+ */
+const getValidRegExp = (regExp: TestOption) => {
+  if (regExp instanceof RegExp) {
+    return regExp;
+  }
+  return new RegExp(regExp);
+};
 
 /**
  * validate and format options
@@ -53,18 +71,11 @@ const validateOptions = (options: Options, path: Record<string, any>) => {
   const parsedRulesArray = rulesArray.map(currentLoader => {
     const { test, transform, unserializeFunc } = currentLoader;
     // get testArray from test
-    let testArray: RegExp[];
+    let testArray: TestOption[];
     if (!Array.isArray(test)) {
       testArray = [test];
     } else {
       testArray = test;
-    }
-
-    // validate option test
-    if (testArray.some(e => !(e instanceof RegExp))) {
-      throw path.buildCodeFrameError(
-        '[options.rules] test is not RegExp or RegExp[]'
-      );
     }
 
     // validate transform function
@@ -84,7 +95,7 @@ const validateOptions = (options: Options, path: Record<string, any>) => {
     }
 
     return {
-      test: testArray,
+      test: testArray.map(e => getValidRegExp(e)),
       transform: transform || String,
       unserializeFunc: unserializeFunc || 'String',
     };
@@ -148,10 +159,13 @@ const ImportDeclaration = (
   const validOptions = validateOptions(state.opts, path);
 
   // get matched loader
-  if (!state.filename) {
+  if (!state.file.opts.filename) {
     throw path.buildCodeFrameError('cannot find entry file path');
   }
-  const filePath = resolve(dirname(state.filename), path.node.source.value);
+  const filePath = resolve(
+    dirname(state.file.opts.filename),
+    path.node.source.value
+  );
   const matchedLoader = validOptions.rules.find(currentLoader => {
     return currentLoader.test.some(e => e.test(filePath));
   });
@@ -221,18 +235,21 @@ interface UnserializeFuncUUIDCacheItem {
   unserializeFuncUUID: string;
 }
 
-export default babel => {
+export default (babel: Record<string, any>) => {
   // used to store
   const unserializeFuncUUIDCache: UnserializeFuncUUIDCacheItem[] = [];
   return {
     name: 'babel-plugin-transform-imports-with-loader',
     visitor: {
       Program: {
-        exit: path => {
+        exit: (path: Record<string, any>) => {
           ProgramExit(path, { unserializeFuncUUIDCache });
         },
       },
-      ImportDeclaration: (path, state) => {
+      ImportDeclaration: (
+        path: Record<string, any>,
+        state: Record<string, any>
+      ) => {
         ImportDeclaration(path, state, { babel, unserializeFuncUUIDCache });
       },
     },

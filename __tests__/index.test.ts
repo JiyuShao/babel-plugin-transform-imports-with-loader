@@ -70,6 +70,27 @@ describe('babel-plugin-transform-imports-with-loader', () => {
     expect(result.includes('this is test string')).toBe(false);
   });
 
+  it('`plugin` should work with test string', () => {
+    const transformedCode = transformFileSync(
+      path.resolve(__dirname, './fixtures/import-as-string/index.js'),
+      {
+        plugins: [
+          [
+            plugin,
+            {
+              rules: {
+                test: '\\.txt',
+              },
+            },
+          ],
+        ],
+      }
+    );
+    const result = transformedCode ? transformedCode.code || '' : '';
+
+    expect(result.includes('this is test string')).toBe(true);
+  });
+
   it('`plugin` should work with `rules[]`', () => {
     const transformedCode = transformFileSync(
       path.resolve(__dirname, './fixtures/import-from-different-file/index.js'),
@@ -183,28 +204,6 @@ describe('babel-plugin-transform-imports-with-loader', () => {
                 rules: {
                   test: /\.txt/,
                   unserializeFunc: 'String',
-                },
-              },
-            ],
-          ],
-        }
-      );
-    };
-
-    expect(testTransformedCode).toThrow();
-  });
-
-  it('`plugin` should throw error when `rules.test` is not RegExp', () => {
-    const testTransformedCode = () => {
-      transformFileSync(
-        path.resolve(__dirname, './fixtures/import-as-string/index.js'),
-        {
-          plugins: [
-            [
-              plugin,
-              {
-                rules: {
-                  test: 'this is not valid RegExp',
                 },
               },
             ],
