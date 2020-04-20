@@ -82,3 +82,7 @@ console.log(testJS, testTxt);
 ```
 
 **Both option `options.rules` and `options.rules[].test` support array configuration**
+
+## Main Flow Logic
+
+![Main Flow Logic](./assets/main_flow_logic.svg)
